@@ -107,8 +107,36 @@ export async function createContentGenerator(
   const httpOptions = {
     headers: {
       'User-Agent': `GeminiCLI/${version} (${process.platform}; ${process.arch})`,
+      
+      // 🎯 添加自定义请求头示例
+      ...(process.env.CUSTOM_API_TOKEN && {
+        'Authorization': `Bearer ${process.env.CUSTOM_API_TOKEN}`
+      }),
+      ...(process.env.CUSTOM_HEADERS && 
+        JSON.parse(process.env.CUSTOM_HEADERS)
+      ),
     },
   };
+
+  // 🔍 添加调试日志
+  if (process.env.DEBUG) {
+    console.debug('[🔧 ContentGenerator] Creating content generator...');
+    console.debug('[📡 HTTP] Request options:', {
+      headers: httpOptions.headers,
+      sessionId: sessionId || 'none'
+    });
+    
+    if (process.env.CUSTOM_API_TOKEN) {
+      console.debug('[🔑 Auth] Custom API token detected');
+    }
+    
+    if (process.env.CUSTOM_HEADERS) {
+      console.debug('[📋 Headers] Custom headers applied:', 
+        JSON.parse(process.env.CUSTOM_HEADERS)
+      );
+    }
+  }
+
   if (config.authType === AuthType.LOGIN_WITH_GOOGLE) {
     return createCodeAssistContentGenerator(
       httpOptions,
