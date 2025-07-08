@@ -21,6 +21,12 @@ esbuild
     outfile: 'bundle/gemini.js',
     platform: 'node',
     format: 'esm',
+    external: [
+      'react',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-dom',
+    ],
     define: {
       'process.env.CLI_VERSION': JSON.stringify(pkg.version),
     },
