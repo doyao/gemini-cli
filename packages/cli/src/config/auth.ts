@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import process from 'node:process';
 import { AuthType } from '@google/gemini-cli-core';
 import { loadEnvironment } from './settings.js';
 
@@ -31,6 +32,20 @@ export const validateAuthMethod = (authMethod: string): string | null => {
         '• GOOGLE_API_KEY environment variable (if using express mode).\n' +
         'Update your .env and try again, no reload needed!'
       );
+    }
+    return null;
+  }
+
+  if (authMethod === AuthType.USE_BIGQUANT) {
+    if (!process.env.CODE_ASSIST_ENDPOINT) {
+      return 'CODE_ASSIST_ENDPOINT environment variable not found. Please set it to your BigQuant API endpoint.';
+    }
+    if (!process.env.GEMINI_API_KEY) {
+      return 'GEMINI_API_KEY environment variable not found. It should contain access key and secret key separated by &.';
+    }
+    const apiKeyParts = process.env.GEMINI_API_KEY.split('&');
+    if (apiKeyParts.length !== 2) {
+      return 'GEMINI_API_KEY must contain access key and secret key separated by & (format: accessKey&secretKey).';
     }
     return null;
   }

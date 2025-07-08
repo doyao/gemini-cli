@@ -16,6 +16,8 @@ import {
 import { createCodeAssistContentGenerator } from '../code_assist/codeAssist.js';
 import { DEFAULT_GEMINI_MODEL } from '../config/models.js';
 import { getEffectiveModel } from './modelCheck.js';
+import process from 'node:process';
+
 
 /**
  * Interface abstracting the core functionalities for generating content and counting tokens.
@@ -38,6 +40,7 @@ export enum AuthType {
   LOGIN_WITH_GOOGLE = 'oauth-personal',
   USE_GEMINI = 'gemini-api-key',
   USE_VERTEX_AI = 'vertex-ai',
+  USE_BIGQUANT = 'bigquant-api',
 }
 
 export type ContentGeneratorConfig = {
@@ -45,6 +48,7 @@ export type ContentGeneratorConfig = {
   apiKey?: string;
   vertexai?: boolean;
   authType?: AuthType | undefined;
+  bigquant?: boolean;
 };
 
 export async function createContentGeneratorConfig(
@@ -96,6 +100,12 @@ export async function createContentGeneratorConfig(
     return contentGeneratorConfig;
   }
 
+  if (authType === AuthType.USE_BIGQUANT && process.env.CODE_ASSIST_ENDPOINT && geminiApiKey) {
+    contentGeneratorConfig.bigquant = true;
+    // For BigQuant, we use the provided model as-is without calling getEffectiveModel
+    return contentGeneratorConfig;
+  }
+
   return contentGeneratorConfig;
 }
 
@@ -128,6 +138,14 @@ export async function createContentGenerator(
     });
 
     return googleGenAI.models;
+  }
+
+  if (config.authType === AuthType.USE_BIGQUANT) {
+    return createCodeAssistContentGenerator(
+      httpOptions,
+      config.authType,
+      sessionId,
+    );
   }
 
   throw new Error(
