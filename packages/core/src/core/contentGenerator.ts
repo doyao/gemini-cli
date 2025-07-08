@@ -145,6 +145,7 @@ export async function createContentGenerator(
       httpOptions,
       config.authType,
       sessionId,
+      config.model, // 传递模型信息
     );
   }
 

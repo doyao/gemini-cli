@@ -11,9 +11,12 @@ import { CodeAssistServer, HttpOptions } from './server.js';
 
 // Simple BigQuant implementation that extends CodeAssistServer
 class BigQuantServer extends CodeAssistServer {
-  constructor(httpOptions: HttpOptions = {}, sessionId?: string) {
+  private model: string;
+
+  constructor(model: string, httpOptions: HttpOptions = {}, sessionId?: string) {
     // Create a dummy OAuth client for BigQuant
     super(null as any, undefined, httpOptions, sessionId);
+    this.model = model;
   }
 
   async requestPost<T>(method: string, req: object, signal?: AbortSignal): Promise<T> {
@@ -91,7 +94,8 @@ class BigQuantServer extends CodeAssistServer {
 
   getMethodUrl(method: string): string {
     const endpoint = (globalThis as any).process?.env?.CODE_ASSIST_ENDPOINT || 'https://bigquant.com/bigapis/codev/v1/gemini';
-    return `${endpoint}/${method}`;
+    // 构造正确的 BigQuant URL 格式: endpoint/model/模型名称/方法名
+    return `${endpoint}/model/${this.model}/${method}`;
   }
 }
 
@@ -99,6 +103,7 @@ export async function createCodeAssistContentGenerator(
   httpOptions: HttpOptions,
   authType: AuthType,
   sessionId?: string,
+  model?: string,
 ): Promise<ContentGenerator> {
   if (authType === AuthType.LOGIN_WITH_GOOGLE) {
     const authClient = await getOauthClient();
@@ -107,7 +112,8 @@ export async function createCodeAssistContentGenerator(
   }
 
   if (authType === AuthType.USE_BIGQUANT) {
-    return new BigQuantServer(httpOptions, sessionId);
+    const modelName = model || 'gemini-pro'; // 默认模型
+    return new BigQuantServer(modelName, httpOptions, sessionId);
   }
 
   throw new Error(`Unsupported authType: ${authType}`);

@@ -4,6 +4,13 @@
 
 已成功为 Gemini CLI 项目添加了 BigQuant 认证方式的支持。该改造允许用户使用 BigQuant API 端点进行认证和 API 调用。
 
+### ⚠️ 重要更新 (2025-01-27)
+
+**URL 格式修正**: 根据实际需求，修正了 BigQuant API 的请求 URL 格式，现在正确支持 `/model/{模型名称}/{方法名}` 的路径结构。
+
+**修正前**: `https://bigquant.com/bigapis/codev/v1/gemini/{方法名}`  
+**修正后**: `https://bigquant.com/bigapis/codev/v1/gemini/model/{模型名称}/{方法名}`
+
 ## 主要改动
 
 ### 1. 添加新的认证类型
@@ -77,6 +84,33 @@ const items = [
    ```
    注意：格式为 `accessKey&secretKey`，通过 `&` 分隔
 
+## API 请求 URL 格式
+
+BigQuant API 请求现在使用正确的 URL 格式：
+
+```
+{CODE_ASSIST_ENDPOINT}/model/{模型名称}/{方法名}
+```
+
+### 示例 URL：
+
+- 基础端点：`https://bigquant.com/bigapis/codev/v1/gemini`
+- 生成内容：`https://bigquant.com/bigapis/codev/v1/gemini/model/gemini-pro/generateContent`
+- 流式生成：`https://bigquant.com/bigapis/codev/v1/gemini/model/gemini-pro/generateContentStream`
+- 计算Token：`https://bigquant.com/bigapis/codev/v1/gemini/model/gemini-pro/countTokens`
+- 嵌入内容：`https://bigquant.com/bigapis/codev/v1/gemini/model/gemini-pro/embedContent`
+
+其中：
+- `gemini-pro` 是模型名称（从配置中获取，默认为 `gemini-pro`）
+- `generateContent`、`countTokens` 等是 API 方法名
+
+### 可用的API方法：
+
+1. **generateContent** - 生成内容（非流式）
+2. **generateContentStream** - 生成内容（流式）
+3. **countTokens** - 计算token数量
+4. **embedContent** - 生成嵌入向量
+
 ## 签名算法实现
 
 BigQuant 认证使用 HMAC-SHA256 签名算法：
@@ -101,6 +135,33 @@ const headers = {
 ```
 
 ## 技术实现细节
+
+### URL 构造逻辑：
+
+```typescript
+getMethodUrl(method: string): string {
+  const endpoint = process.env.CODE_ASSIST_ENDPOINT || 'https://bigquant.com/bigapis/codev/v1/gemini';
+  // 构造正确的 BigQuant URL 格式: endpoint/model/模型名称/方法名
+  return `${endpoint}/model/${this.model}/${method}`;
+}
+```
+
+### 模型传递机制：
+
+```typescript
+export async function createCodeAssistContentGenerator(
+  httpOptions: HttpOptions,
+  authType: AuthType,
+  sessionId?: string,
+  model?: string, // 新增模型参数
+): Promise<ContentGenerator> {
+  if (authType === AuthType.USE_BIGQUANT) {
+    const modelName = model || 'gemini-pro'; // 默认模型
+    return new BigQuantServer(modelName, httpOptions, sessionId);
+  }
+  // ...
+}
+```
 
 ### 签名算法代码片段：
 
